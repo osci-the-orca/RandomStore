@@ -2,69 +2,79 @@ import AddShoppingCartIcon from "@mui/icons-material/AddShoppingCart";
 import { Badge, Drawer, Grid, LinearProgress } from "@mui/material";
 import { useState } from "react";
 import { useQuery } from "react-query";
-import './App.css';
+import "./App.css";
 
 //Components
 import Product from "./components/Product";
+import ShoppingCart from "./components/ShoppingCart";
 
 //Styles
 import { StyledButton, Wrapper } from "./App.styles";
 
 export type CartItemType = {
-  id: number,
-  category: string,
-  description: string,
-  image: string,
-  price: number,
-  title: string,
-  quantity: number
-}
+  id: number;
+  category: string;
+  description: string;
+  image: string;
+  price: number;
+  title: string;
+  quantity: number;
+};
 
-const getProducts = async () => {
-  const response: Response = await fetch('https://fakestoreapi.com/products');
-  return response.json();
-}
+const getProducts = async (): Promise<CartItemType[]> => await (await fetch("https://fakestoreapi.com/products")).json();
+
+// const getProducts = async () => {
+//   const response: Response = await fetch("https://fakestoreapi.com/products");
+//   return await response.json();
+// };
 
 function App() {
-
   const [cartIsOpen, setCartIsOpen] = useState(false);
-  const [productsInCart, setProductsInCart] = useState([] as CartItemType[])
+  const [productsInCart, setProductsInCart] = useState([] as CartItemType[]);
 
-  const { data, isLoading, error } = useQuery<CartItemType[]>('products', getProducts, undefined);
+  const { data, isLoading, error } = useQuery<CartItemType[]>("products", getProducts);
 
-  const getTotalProducts: Function = (products: CartItemType[]) => {
-    products.reduce((acc: number, product) => acc + product.quantity, 0);
+  const getTotalProducts = (products: CartItemType[]) => products.reduce((acc: number, product) => acc + product.quantity, 0); 
+ 
+
+  const handleAddToCart = (selectedProduct: CartItemType) => {
+    setProductsInCart((prev) => {
+      const isProductInCart = prev.find((product) => product.id === selectedProduct.id);
+
+      if (isProductInCart) {
+        return prev.map((product) => (product.id === selectedProduct.id ? { ...product, quantity: product.quantity + 1 } : product));
+      }
+      
+      return [...prev, { ...selectedProduct, quantity: 1 }];
+    });
   };
 
-  const handleAddToCart: Function = (selectedProduct: CartItemType) => null;
+  const handleRemoveFromCart = () => null;
 
-  const handleRemoveFromCart: Function = () => null;
-
-  if(isLoading) return <LinearProgress/>;
-  if(error) return <div>something when wrong</div>
-
+  if (isLoading) return <LinearProgress />;
+  if (error) return <div>something when wrong</div>;
 
   return (
     <div className="App">
       <Wrapper>
-        <Drawer anchor='right' open={cartIsOpen} onClose={() => setCartIsOpen(false)}>
-          Cart goes here
+        <Drawer anchor="right" open={cartIsOpen} onClose={() => setCartIsOpen(false)}>
+          <ShoppingCart cartProducts={productsInCart} addToCart={handleAddToCart} removeFromCart={handleRemoveFromCart} />
         </Drawer>
         <StyledButton onClick={() => setCartIsOpen(true)}>
-          <Badge badgeContent={getTotalProducts(productsInCart)}  color='error'>
-            <AddShoppingCartIcon/>
+          <Badge badgeContent={getTotalProducts(productsInCart)} color="error">
+            <AddShoppingCartIcon />
           </Badge>
         </StyledButton>
         <Grid container spacing={3}>
-          {data?.map(product => (
+          {data?.map((product) => (
             <Grid item key={product.id} xs={12} sm={4}>
-              <Product product={product} handleAddToCart={handleAddToCart(product)}/>
+              <Product product={product} handleAddToCart={handleAddToCart} />
             </Grid>
           ))}
         </Grid>
       </Wrapper>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
